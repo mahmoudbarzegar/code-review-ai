@@ -3,7 +3,8 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
+  "Access-Control-Allow-Headers":
+    "Content-Type, Authorization, X-Client-Info, Apikey",
 };
 
 interface AnalyzeRequest {
@@ -37,11 +38,20 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const { projectPath, mainBranch, featureBranch, ollamaUrl, ollamaModel }: AnalyzeRequest = await req.json();
+    const {
+      projectPath,
+      mainBranch,
+      featureBranch,
+      ollamaUrl,
+      ollamaModel,
+    }: AnalyzeRequest = await req.json();
 
     if (!projectPath || !mainBranch || !featureBranch) {
       return new Response(
-        JSON.stringify({ error: "Missing required fields: projectPath, mainBranch, featureBranch" }),
+        JSON.stringify({
+          error:
+            "Missing required fields: projectPath, mainBranch, featureBranch",
+        }),
         {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -49,7 +59,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const ollamaApiUrl = ollamaUrl || "http://host.docker.internal:11434";
+    const ollamaApiUrl = ollamaUrl || "http://localhost:11434";
     const model = ollamaModel || "llama2";
 
     const gitDiffCommand = new Deno.Command("git", {
@@ -65,12 +75,7 @@ Deno.serve(async (req: Request) => {
     });
 
     const gitDiffDetailCommand = new Deno.Command("git", {
-      args: [
-        "-C",
-        projectPath,
-        "diff",
-        `${mainBranch}...${featureBranch}`,
-      ],
+      args: ["-C", projectPath, "diff", `${mainBranch}...${featureBranch}`],
       stdout: "piped",
       stderr: "piped",
     });
@@ -98,7 +103,12 @@ Deno.serve(async (req: Request) => {
     const fileChanges = parseDiffDetails(detailText);
 
     let aiAnalysis = "";
-    let errorsWarnings: Array<{type: string, message: string, file?: string, line?: number}> = [];
+    let errorsWarnings: Array<{
+      type: string;
+      message: string;
+      file?: string;
+      line?: number;
+    }> = [];
 
     try {
       const analysisPrompt = `You are a code reviewer. Analyze the following git diff and provide:
@@ -133,10 +143,11 @@ Provide your analysis in a structured format.`;
       if (ollamaResponse.ok) {
         const ollamaData = await ollamaResponse.json();
         aiAnalysis = ollamaData.response || "No analysis available";
-        
+
         errorsWarnings = extractErrorsWarnings(aiAnalysis, fileChanges);
       } else {
-        aiAnalysis = "Ollama analysis unavailable. Make sure Ollama is running locally.";
+        aiAnalysis =
+          "Ollama analysis unavailable. Make sure Ollama is running locally.";
       }
     } catch (error) {
       aiAnalysis = `Ollama connection failed: ${error.message}. Ensure Ollama is installed and running on ${ollamaApiUrl}`;
@@ -154,13 +165,10 @@ Provide your analysis in a structured format.`;
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
-    );
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });
 
@@ -193,19 +201,19 @@ function parseDiffDetails(detailText: string): FileChange[] {
   for (let i = 1; i < fileDiffs.length; i++) {
     const fileDiff = fileDiffs[i];
     const fileMatch = fileDiff.match(/a\/(.+?)\s+b\//);
-    
+
     if (fileMatch) {
       const fileName = fileMatch[1];
       const lines = fileDiff.split("\n");
-      
+
       let insertions = 0;
       let deletions = 0;
-      
+
       for (const line of lines) {
         if (line.startsWith("+") && !line.startsWith("+++")) insertions++;
         if (line.startsWith("-") && !line.startsWith("---")) deletions++;
       }
-      
+
       fileChanges.push({
         file: fileName,
         changes: insertions + deletions,
@@ -219,27 +227,48 @@ function parseDiffDetails(detailText: string): FileChange[] {
   return fileChanges;
 }
 
-function extractErrorsWarnings(analysis: string, fileChanges: FileChange[]): Array<{type: string, message: string, file?: string, line?: number}> {
-  const errorsWarnings: Array<{type: string, message: string, file?: string, line?: number}> = [];
-  
-  const errorKeywords = ["error", "bug", "issue", "problem", "security", "vulnerability"];
-  const warningKeywords = ["warning", "concern", "consider", "should", "recommend"];
-  
+function extractErrorsWarnings(
+  analysis: string,
+  fileChanges: FileChange[]
+): Array<{ type: string; message: string; file?: string; line?: number }> {
+  const errorsWarnings: Array<{
+    type: string;
+    message: string;
+    file?: string;
+    line?: number;
+  }> = [];
+
+  const errorKeywords = [
+    "error",
+    "bug",
+    "issue",
+    "problem",
+    "security",
+    "vulnerability",
+  ];
+  const warningKeywords = [
+    "warning",
+    "concern",
+    "consider",
+    "should",
+    "recommend",
+  ];
+
   const analysisLines = analysis.toLowerCase().split("\n");
-  
+
   for (const line of analysisLines) {
-    if (errorKeywords.some(keyword => line.includes(keyword))) {
+    if (errorKeywords.some((keyword) => line.includes(keyword))) {
       errorsWarnings.push({
         type: "error",
         message: line.trim(),
       });
-    } else if (warningKeywords.some(keyword => line.includes(keyword))) {
+    } else if (warningKeywords.some((keyword) => line.includes(keyword))) {
       errorsWarnings.push({
         type: "warning",
         message: line.trim(),
       });
     }
   }
-  
+
   return errorsWarnings;
 }

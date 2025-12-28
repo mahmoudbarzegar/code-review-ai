@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { GitBranch, Loader2 } from 'lucide-react';
+import { useState } from "react";
+import { GitBranch, Loader2 } from "lucide-react";
 
 interface AnalysisFormProps {
   onAnalyze: (data: {
@@ -14,19 +14,20 @@ interface AnalysisFormProps {
 }
 
 export function AnalysisForm({ onAnalyze, isLoading }: AnalysisFormProps) {
-  const [projectPath, setProjectPath] = useState('');
-  const [mainBranch, setMainBranch] = useState('main');
-  const [featureBranch, setFeatureBranch] = useState('');
-  const [ollamaUrl, setOllamaUrl] = useState('http://host.docker.internal:11434');
-  const [ollamaModel, setOllamaModel] = useState('llama2');
+  const [projectPath, setProjectPath] = useState("");
+  const [mainBranch, setMainBranch] = useState("main");
+  const [featureBranch, setFeatureBranch] = useState("");
+  const [ollamaUrl, setOllamaUrl] = useState("http://localhost:11434");
+  const [ollamaModel, setOllamaModel] = useState("llama2");
   const [excludedFolders, setExcludedFolders] = useState(
-    import.meta.env.VITE_EXCLUDED_FOLDERS || 'node_modules,dist,.git,.next,build,.venv,__pycache__,.env'
+    import.meta.env.VITE_EXCLUDED_FOLDERS ||
+      "node_modules,dist,.git,.next,build,.venv,__pycache__,.env"
   );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const excludes = excludedFolders
-      .split(',')
+      .split(",")
       .map((f) => f.trim())
       .filter((f) => f.length > 0);
 
@@ -151,7 +152,8 @@ export function AnalysisForm({ onAnalyze, isLoading }: AnalysisFormProps) {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
               <p className="mt-1 text-xs text-gray-500">
-                Use any model available in your Ollama (e.g., llama2, codellama, mistral)
+                Use any model available in your Ollama (e.g., llama2, codellama,
+                mistral)
               </p>
             </div>
           </div>
@@ -168,7 +170,7 @@ export function AnalysisForm({ onAnalyze, isLoading }: AnalysisFormProps) {
               Analyzing...
             </>
           ) : (
-            'Analyze Branches'
+            "Analyze Branches"
           )}
         </button>
       </form>
