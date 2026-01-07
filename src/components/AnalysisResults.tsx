@@ -1,4 +1,19 @@
-import { FileCode, AlertCircle, AlertTriangle, TrendingUp, TrendingDown } from 'lucide-react';
+import {
+  FileCode,
+  AlertCircle,
+  AlertTriangle,
+  TrendingUp,
+  TrendingDown,
+} from "lucide-react";
+
+import { FileDiffViewer } from "./FileDiffViewer";
+
+interface LineChange {
+  oldLineNumber: number | null;
+  newLineNumber: number | null;
+  type: "addition" | "deletion" | "context";
+  content: string;
+}
 
 interface AnalysisResultsProps {
   diffSummary: {
@@ -12,6 +27,7 @@ interface AnalysisResultsProps {
     insertions: number;
     deletions: number;
     diff: string;
+    lineChanges: LineChange[];
   }>;
   aiAnalysis: string;
   errorsWarnings: Array<{
@@ -28,8 +44,8 @@ export function AnalysisResults({
   aiAnalysis,
   errorsWarnings,
 }: AnalysisResultsProps) {
-  const errors = errorsWarnings.filter((item) => item.type === 'error');
-  const warnings = errorsWarnings.filter((item) => item.type === 'warning');
+  const errors = errorsWarnings.filter((item) => item.type === "error");
+  const warnings = errorsWarnings.filter((item) => item.type === "warning");
 
   return (
     <div className="space-y-6">
@@ -134,6 +150,24 @@ export function AnalysisResults({
       )}
 
       <div className="bg-white rounded-lg shadow p-6">
+        <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+          <FileCode className="w-6 h-6 text-gray-700" />
+          File Changes with Line Details
+        </h3>
+        <div className="space-y-3">
+          {fileChanges.map((file, index) => (
+            <FileDiffViewer
+              key={index}
+              file={file.file}
+              insertions={file.insertions}
+              deletions={file.deletions}
+              lineChanges={file.lineChanges}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* <div className="bg-white rounded-lg shadow p-6">
         <h3 className="text-lg font-semibold text-gray-800 mb-4">
           File Changes
         </h3>
@@ -162,7 +196,7 @@ export function AnalysisResults({
             </div>
           ))}
         </div>
-      </div>
+      </div> */}
 
       {aiAnalysis && (
         <div className="bg-white rounded-lg shadow p-6">
