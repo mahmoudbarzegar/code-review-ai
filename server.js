@@ -1,8 +1,8 @@
-import express from 'express';
-import cors from 'cors';
-import { execSync } from 'child_process';
-import { v4 as uuidv4 } from 'uuid';
-import { dbRun, dbGet, dbAll } from './db.js';
+import express from "express";
+import cors from "cors";
+import { execSync } from "child_process";
+import { v4 as uuidv4 } from "uuid";
+import { dbRun, dbGet, dbAll } from "./db.js";
 
 const app = express();
 const PORT = 3001;
@@ -10,18 +10,26 @@ const PORT = 3001;
 app.use(cors());
 app.use(express.json());
 
-app.post('/api/analyze-branch', async (req, res) => {
+app.post("/api/analyze-branch", async (req, res) => {
   try {
-    const { projectPath, mainBranch, featureBranch, ollamaUrl, ollamaModel, excludedFolders } = req.body;
+    const {
+      projectPath,
+      mainBranch,
+      featureBranch,
+      ollamaUrl,
+      ollamaModel,
+      excludedFolders,
+    } = req.body;
 
     if (!projectPath || !mainBranch || !featureBranch) {
       return res.status(400).json({
-        error: 'Missing required fields: projectPath, mainBranch, featureBranch',
+        error:
+          "Missing required fields: projectPath, mainBranch, featureBranch",
       });
     }
 
-    const ollamaApiUrl = ollamaUrl || 'http://localhost:11434';
-    const model = ollamaModel || 'llama2';
+    const ollamaApiUrl = ollamaUrl || "http://localhost:11434";
+    const model = ollamaModel || "llama2";
     const excludes = excludedFolders || [];
     const campaignId = uuidv4();
 
@@ -29,10 +37,21 @@ app.post('/api/analyze-branch', async (req, res) => {
       await dbRun(
         `INSERT INTO campaigns (id, project_path, main_branch, feature_branch, excluded_folders, ollama_url, ollama_model, status)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [campaignId, projectPath, mainBranch, featureBranch, JSON.stringify(excludes), ollamaApiUrl, model, 'in_progress']
+        [
+          campaignId,
+          projectPath,
+          mainBranch,
+          featureBranch,
+          JSON.stringify(excludes),
+          ollamaApiUrl,
+          model,
+          "in_progress",
+        ]
       );
     } catch (dbError) {
-      return res.status(500).json({ error: `Failed to create campaign: ${dbError.message}` });
+      return res
+        .status(500)
+        .json({ error: `Failed to create campaign: ${dbError.message}` });
     }
 
     try {
@@ -40,18 +59,21 @@ app.post('/api/analyze-branch', async (req, res) => {
       let diffCommand = `git -C "${projectPath}" diff ${mainBranch}...${featureBranch}`;
 
       if (excludes.length > 0) {
-        const excludePatterns = excludes.map((f) => `:!:${f}/**`).join(' ');
+        const excludePatterns = excludes.map((f) => `:!:${f}/**`).join(" ");
         statCommand += ` -- . ${excludePatterns}`;
         diffCommand += ` -- . ${excludePatterns}`;
       }
 
-      const statOutput = execSync(statCommand, { encoding: 'utf8' });
-      const detailOutput = execSync(diffCommand, { encoding: 'utf8', maxBuffer: 10 * 1024 * 1024 });
+      const statOutput = execSync(statCommand, { encoding: "utf8" });
+      const detailOutput = execSync(diffCommand, {
+        encoding: "utf8",
+        maxBuffer: 10 * 1024 * 1024,
+      });
 
       const diffSummary = parseDiffSummary(statOutput);
       const fileChanges = parseDiffDetails(detailOutput);
 
-      let aiAnalysis = '';
+      let aiAnalysis = "";
       let errorsWarnings = [];
 
       try {
@@ -73,9 +95,9 @@ ${detailOutput.substring(0, 8000)}
 Provide your analysis in a structured format.`;
 
         const ollamaResponse = await fetch(`${ollamaApiUrl}/api/generate`, {
-          method: 'POST',
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
             model: model,
@@ -84,13 +106,16 @@ Provide your analysis in a structured format.`;
           }),
         });
 
+        console.log(ollamaResponse);
+        console.log(ollamaApiUrl);
+
         if (ollamaResponse.ok) {
           const ollamaData = await ollamaResponse.json();
-          aiAnalysis = ollamaData.response || 'No analysis available';
+          aiAnalysis = ollamaData.response || "No analysis available";
           errorsWarnings = extractErrorsWarnings(aiAnalysis, fileChanges);
         } else {
           aiAnalysis =
-            'Ollama analysis unavailable. Make sure Ollama is running locally.';
+            "Ollama analysis unavailable. Make sure Ollama is running locally.";
         }
       } catch (error) {
         aiAnalysis = `Ollama connection failed: ${error.message}. Ensure Ollama is installed and running on ${ollamaApiUrl}`;
@@ -101,15 +126,22 @@ Provide your analysis in a structured format.`;
         await dbRun(
           `INSERT INTO analysis_results (id, campaign_id, diff_summary, file_changes, ai_analysis, errors_warnings)
            VALUES (?, ?, ?, ?, ?, ?)`,
-          [resultsId, campaignId, JSON.stringify(diffSummary), JSON.stringify(fileChanges), aiAnalysis, JSON.stringify(errorsWarnings)]
+          [
+            resultsId,
+            campaignId,
+            JSON.stringify(diffSummary),
+            JSON.stringify(fileChanges),
+            aiAnalysis,
+            JSON.stringify(errorsWarnings),
+          ]
         );
       } catch (error) {
-        console.error('Failed to save results:', error);
+        console.error("Failed to save results:", error);
       }
 
       await dbRun(
         `UPDATE campaigns SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
-        ['completed', campaignId]
+        ["completed", campaignId]
       );
 
       const result = {
@@ -118,14 +150,14 @@ Provide your analysis in a structured format.`;
         fileChanges,
         aiAnalysis,
         errorsWarnings,
-        status: 'completed',
+        status: "completed",
       };
 
       res.json(result);
     } catch (error) {
       await dbRun(
         `UPDATE campaigns SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
-        ['failed', campaignId]
+        ["failed", campaignId]
       );
 
       return res.status(400).json({
@@ -140,7 +172,7 @@ Provide your analysis in a structured format.`;
   }
 });
 
-app.get('/api/campaigns', async (req, res) => {
+app.get("/api/campaigns", async (req, res) => {
   try {
     const data = await dbAll(
       `SELECT * FROM campaigns ORDER BY created_at DESC LIMIT 50`
@@ -151,7 +183,7 @@ app.get('/api/campaigns', async (req, res) => {
   }
 });
 
-app.get('/api/campaigns/:id/results', async (req, res) => {
+app.get("/api/campaigns/:id/results", async (req, res) => {
   try {
     const { id } = req.params;
     const data = await dbGet(
@@ -165,13 +197,13 @@ app.get('/api/campaigns/:id/results', async (req, res) => {
 });
 
 function parseDiffSummary(statText) {
-  const lines = statText.split('\n');
+  const lines = statText.split("\n");
   let filesChanged = 0;
   let insertions = 0;
   let deletions = 0;
 
   for (const line of lines) {
-    if (line.includes('file') && line.includes('changed')) {
+    if (line.includes("file") && line.includes("changed")) {
       const match = line.match(/(\d+)\s+file/);
       if (match) filesChanged = parseInt(match[1]);
 
@@ -188,7 +220,7 @@ function parseDiffSummary(statText) {
 
 function parseDiffDetails(detailText) {
   const fileChanges = [];
-  const fileDiffs = detailText.split('diff --git');
+  const fileDiffs = detailText.split("diff --git");
 
   for (let i = 1; i < fileDiffs.length; i++) {
     const fileDiff = fileDiffs[i];
@@ -196,14 +228,64 @@ function parseDiffDetails(detailText) {
 
     if (fileMatch) {
       const fileName = fileMatch[1];
-      const lines = fileDiff.split('\n');
+      const lines = fileDiff.split("\n");
+      const lineChanges = [];
 
       let insertions = 0;
       let deletions = 0;
 
+      let oldLineNum = 0;
+      let newLineNum = 0;
+      let inHunk = false;
+
       for (const line of lines) {
-        if (line.startsWith('+') && !line.startsWith('+++')) insertions++;
-        if (line.startsWith('-') && !line.startsWith('---')) deletions++;
+        if (line.startsWith("@@")) {
+          const hunkMatch = line.match(/@@ -(\d+),?\d* \+(\d+),?\d* @@/);
+          if (hunkMatch) {
+            oldLineNum = parseInt(hunkMatch[1]);
+            newLineNum = parseInt(hunkMatch[2]);
+            inHunk = true;
+          }
+          continue;
+        }
+
+        if (
+          !inHunk ||
+          line.startsWith("---") ||
+          line.startsWith("+++") ||
+          line.startsWith("\\")
+        ) {
+          continue;
+        }
+        if (line.startsWith("+")) {
+          insertions++;
+          lineChanges.push({
+            oldLineNumber: null,
+            newLineNumber: newLineNum,
+            type: "addition",
+            content: line.substring(1),
+          });
+          newLineNum++;
+        } else if (line.startsWith("-")) {
+          deletions++;
+
+          lineChanges.push({
+            oldLineNumber: oldLineNum,
+            newLineNumber: null,
+            type: "deletion",
+            content: line.substring(1),
+          });
+          oldLineNum++;
+        } else if (line.startsWith(" ")) {
+          lineChanges.push({
+            oldLineNumber: oldLineNum,
+            newLineNumber: newLineNum,
+            type: "context",
+            content: line.substring(1),
+          });
+          oldLineNum++;
+          newLineNum++;
+        }
       }
 
       fileChanges.push({
@@ -212,6 +294,7 @@ function parseDiffDetails(detailText) {
         insertions,
         deletions,
         diff: fileDiff.substring(0, 1000),
+        lineChanges,
       });
     }
   }
@@ -222,20 +305,33 @@ function parseDiffDetails(detailText) {
 function extractErrorsWarnings(analysis, fileChanges) {
   const errorsWarnings = [];
 
-  const errorKeywords = ['error', 'bug', 'issue', 'problem', 'security', 'vulnerability'];
-  const warningKeywords = ['warning', 'concern', 'consider', 'should', 'recommend'];
+  const errorKeywords = [
+    "error",
+    "bug",
+    "issue",
+    "problem",
+    "security",
+    "vulnerability",
+  ];
+  const warningKeywords = [
+    "warning",
+    "concern",
+    "consider",
+    "should",
+    "recommend",
+  ];
 
-  const analysisLines = analysis.toLowerCase().split('\n');
+  const analysisLines = analysis.toLowerCase().split("\n");
 
   for (const line of analysisLines) {
     if (errorKeywords.some((keyword) => line.includes(keyword))) {
       errorsWarnings.push({
-        type: 'error',
+        type: "error",
         message: line.trim(),
       });
     } else if (warningKeywords.some((keyword) => line.includes(keyword))) {
       errorsWarnings.push({
-        type: 'warning',
+        type: "warning",
         message: line.trim(),
       });
     }
@@ -246,5 +342,5 @@ function extractErrorsWarnings(analysis, fileChanges) {
 
 app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
-  console.log('Make sure Ollama is running: ollama serve');
+  console.log("Make sure Ollama is running: ollama serve");
 });
