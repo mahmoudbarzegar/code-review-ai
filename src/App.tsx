@@ -1,7 +1,14 @@
-import { useState } from 'react';
-import { AnalysisForm } from './components/AnalysisForm';
-import { AnalysisResults } from './components/AnalysisResults';
-import { History } from 'lucide-react';
+import { useState } from "react";
+import { AnalysisForm } from "./components/AnalysisForm";
+import { AnalysisResults } from "./components/AnalysisResults";
+import { History } from "lucide-react";
+
+interface LineChange {
+  oldLineNumber: number | null;
+  newLineNumber: number | null;
+  type: "addition" | "deletion" | "context";
+  content: string;
+}
 
 interface AnalysisData {
   diffSummary: {
@@ -15,6 +22,7 @@ interface AnalysisData {
     insertions: number;
     deletions: number;
     diff: string;
+    lineChanges: LineChange[];
   }>;
   aiAnalysis: string;
   errorsWarnings: Array<{
@@ -43,10 +51,10 @@ function App() {
     setAnalysisData(null);
 
     try {
-      const response = await fetch('http://localhost:3001/api/analyze-branch', {
-        method: 'POST',
+      const response = await fetch("http://localhost:3001/api/analyze-branch", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           projectPath: formData.projectPath,
@@ -70,7 +78,9 @@ function App() {
 
       setAnalysisData(result);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An unknown error occurred');
+      setError(
+        err instanceof Error ? err.message : "An unknown error occurred"
+      );
     } finally {
       setIsLoading(false);
     }
@@ -130,7 +140,8 @@ function App() {
                 <div className="bg-white rounded-lg shadow p-12 text-center">
                   <History className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                   <p className="text-gray-500">
-                    Enter your project details and click "Analyze Branches" to get started
+                    Enter your project details and click "Analyze Branches" to
+                    get started
                   </p>
                 </div>
               )}
