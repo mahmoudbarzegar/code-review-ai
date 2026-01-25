@@ -167,37 +167,6 @@ export function AnalysisResults({
         </div>
       </div>
 
-      {/* <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">
-          File Changes
-        </h3>
-        <div className="space-y-2">
-          {fileChanges.map((file, index) => (
-            <div
-              key={index}
-              className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <FileCode className="w-5 h-5 text-gray-400 flex-shrink-0" />
-                  <span className="font-mono text-sm text-gray-700 truncate">
-                    {file.file}
-                  </span>
-                </div>
-                <div className="flex items-center gap-4 text-sm flex-shrink-0">
-                  <span className="text-green-600 font-medium">
-                    +{file.insertions}
-                  </span>
-                  <span className="text-red-600 font-medium">
-                    -{file.deletions}
-                  </span>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div> */}
-
       {aiAnalysis && (
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">
