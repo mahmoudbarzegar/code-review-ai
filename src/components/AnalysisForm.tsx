@@ -21,15 +21,15 @@ export function AnalysisForm({ onAnalyze, isLoading }: AnalysisFormProps) {
   const [ollamaModel, setOllamaModel] = useState("llama2");
   const [excludedFolders, setExcludedFolders] = useState(
     import.meta.env.VITE_EXCLUDED_FOLDERS ||
-      "node_modules,dist,.git,.next,build,.venv,__pycache__,.env"
+      "node_modules,dist,.git,.next,build,.venv,__pycache__,.env",
   );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const excludes = excludedFolders
       .split(",")
-      .map((f) => f.trim())
-      .filter((f) => f.length > 0);
+      .map((f: string) => f.trim())
+      .filter((f: string) => f.length > 0);
 
     onAnalyze({
       projectPath,
