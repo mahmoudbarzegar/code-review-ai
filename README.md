@@ -31,7 +31,7 @@ A powerful local tool for analyzing git branch differences with AI-powered insig
 1. Download/clone this project
 2. Navigate to the project directory:
    ```bash
-   cd git-branch-analyzer
+   cd code-review-ai
    ```
 3. Install dependencies:
    ```bash
@@ -43,24 +43,31 @@ A powerful local tool for analyzing git branch differences with AI-powered insig
 There are two ways to run this:
 
 ### Option 1: Run Both Frontend and Backend Together
+
 ```bash
 npm run dev
 ```
+
 This starts both the React frontend (port 5173) and the Node.js backend (port 3001) simultaneously.
 
 ### Option 2: Run Separately
+
 In terminal 1 (frontend):
+
 ```bash
 npm run client
 ```
 
 In terminal 2 (backend):
+
 ```bash
 npm run server
 ```
 
 ### Important: Start Ollama First
+
 Before using the analyzer, make sure Ollama is running:
+
 ```bash
 ollama serve
 ```
@@ -95,6 +102,7 @@ ollama serve
 ## Ollama Models
 
 You can use any Ollama model installed on your system:
+
 - `llama2` - General purpose, good for most tasks
 - `codellama` - Optimized specifically for code analysis
 - `mistral` - Faster, lightweight model
@@ -102,11 +110,13 @@ You can use any Ollama model installed on your system:
 - `neural-chat` - Good balance of speed and quality
 
 To install a new model:
+
 ```bash
 ollama pull <model-name>
 ```
 
 To see all installed models:
+
 ```bash
 ollama list
 ```
@@ -117,8 +127,9 @@ ollama list
 .
 ├── src/
 │   ├── components/
-│   │   ├── AnalysisForm.tsx      # Input form component
-│   │   └── AnalysisResults.tsx   # Results display component
+│   │   ├── AnalysisForm.tsx       # Input form component
+│   │   └── AnalysisResults.tsx    # Results display component
+│   │   └── FileDiffViewer.tsx     # File Different Viewer
 │   ├── App.tsx                    # Main app component
 │   └── main.tsx                   # Entry point
 ├── server.js                      # Express backend (git & Ollama operations)
@@ -129,25 +140,30 @@ ollama list
 ## Troubleshooting
 
 ### "Ollama connection failed"
+
 - Make sure Ollama is running: `ollama serve`
 - Verify the Ollama API URL is correct (default: `http://localhost:11434`)
 - Check that you have an Ollama model installed: `ollama list`
 
 ### "Git diff failed"
+
 - Verify the project path is correct and points to a valid git repository
 - Ensure both branches exist: `git branch -a`
 - Check that you have read permissions for the repository
 
 ### "Cannot connect to server"
+
 - Make sure the backend is running: `npm run server`
 - Check that port 3001 is available
 - Look at the terminal output for error messages
 
 ### "Port 3001 already in use"
+
 - Another application is using port 3001
 - Kill the process using the port, or modify the port in `server.js`
 
 ### Ollama model is slow
+
 - This is normal for the first run - models are being loaded into memory
 - Consider using a smaller model like `mistral` for faster analysis
 - Larger models like `llama2` provide better analysis but are slower
@@ -155,6 +171,7 @@ ollama list
 ## Building for Production
 
 To create an optimized production build:
+
 ```bash
 npm run build
 ```
